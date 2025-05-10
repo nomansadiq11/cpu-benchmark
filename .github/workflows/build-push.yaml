@@ -1,0 +1,39 @@
+name: Build and Push Docker Image on Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # This triggers the workflow when a tag matching the pattern vX.X.X is pushed
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKER_USERNAME }}
+        password: ${{ secrets.DOCKER_PASSWORD }}
+    - name: Extract tag
+      id: extract_tag
+      run: echo "TAG_NAME=${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          nomansadiq11/cpu-benchmark:${{ env.TAG_NAME }}
+          nomansadiq11/cpu-benchmark:latest
+
+    - name: Logout from Docker Hub
+      run: docker logout
